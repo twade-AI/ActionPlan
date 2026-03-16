@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ActionPlan — Meeting Reflection Tool</title>
+  <style>
+/* ActionPlan — Meeting Reflection Tool */
+:root {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --border: #e5e5e4;
+  --text: #1c1917;
+  --text-muted: #78716c;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --success: #16a34a;
+  --accent: #7c3aed;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'Fira Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-left h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.tagline { font-size: 13px; color: var(--text-muted); margin-left: 12px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+.privacy-badge {
+  font-size: 11px; padding: 4px 10px; background: #ecfdf5;
+  color: var(--success); border-radius: 12px; font-weight: 600; margin-left: 8px;
+}
+
+.btn {
+  padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn:hover { background: #f5f5f4; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { background: var(--primary); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: #f5f5f4; }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: #fef2f2; }
+.btn-large { padding: 12px 32px; font-size: 16px; }
+
+.main-content { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+
+.panel { display: none; }
+.panel-active { display: block; }
+.panel[hidden] { display: none; }
+.panel h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
+.panel-subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 24px; }
+
+.input-meta { display: flex; gap: 12px; margin-bottom: 16px; }
+.input-meta input {
+  flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 14px; font-family: var(--font); background: var(--surface);
+}
+.input-meta input:focus, textarea:focus, #input-new-objective:focus, #input-api-key:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.input-area { position: relative; margin-bottom: 20px; }
+
+textarea {
+  width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 15px; font-family: var(--font); line-height: 1.6; resize: vertical;
+  min-height: 180px; background: var(--surface);
+}
+
+.voice-controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.btn-record { display: flex; align-items: center; gap: 8px; }
+.record-icon { width: 10px; height: 10px; border-radius: 50%; background: white; display: inline-block; }
+.btn-record.recording { background: var(--danger); border-color: var(--danger); animation: pulse 1.5s infinite; }
+.btn-record.recording .record-icon { background: white; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+.recording-status { font-size: 13px; color: var(--text-muted); }
+.input-actions { display: flex; justify-content: flex-end; }
+
+.reflection-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; }
+.reflection-date { font-size: 13px; color: var(--text-muted); }
+.reflection-content {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow);
+}
+.reflection-section { margin-bottom: 24px; }
+.reflection-section:last-child { margin-bottom: 0; }
+.reflection-section h3 {
+  font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+.reflection-section ul { list-style: none; padding: 0; }
+.reflection-section li { padding: 6px 0; font-size: 15px; line-height: 1.5; }
+.reflection-section li::before { content: '\2192 '; color: var(--primary); font-weight: 600; }
+
+.objective-tag {
+  display: inline-block; font-size: 11px; padding: 2px 8px; background: #ede9fe;
+  color: var(--accent); border-radius: 10px; font-weight: 600; margin-left: 8px;
+}
+
+.time-challenge {
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius);
+  padding: 16px; margin-top: 16px;
+}
+.time-challenge h3 { color: #92400e; border: none; padding: 0; margin-bottom: 8px; }
+.time-challenge p { font-size: 15px; color: #78350f; }
+
+.reflection-actions { display: flex; gap: 12px; justify-content: flex-end; }
+
+.objectives-list { margin-bottom: 24px; }
+.objective-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.objective-item .objective-text { font-size: 15px; font-weight: 500; }
+.objective-item .btn-remove {
+  font-size: 18px; color: var(--text-muted); background: none; border: none;
+  cursor: pointer; padding: 4px 8px; border-radius: 4px;
+}
+.objective-item .btn-remove:hover { color: var(--danger); background: #fef2f2; }
+.add-objective { display: flex; gap: 12px; margin-bottom: 24px; }
+.add-objective input {
+  flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 14px; font-family: var(--font);
+}
+.objectives-actions, .history-actions { display: flex; gap: 12px; }
+
+.history-list { margin-bottom: 24px; }
+.history-item {
+  padding: 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 8px; cursor: pointer;
+  box-shadow: var(--shadow); transition: box-shadow 0.15s;
+}
+.history-item:hover { box-shadow: var(--shadow-lg); }
+.history-item-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.history-item-date { font-size: 13px; color: var(--text-muted); }
+.history-item-preview {
+  font-size: 13px; color: var(--text-muted); margin-top: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.history-empty { text-align: center; padding: 40px; color: var(--text-muted); }
+
+.settings-group { margin-bottom: 32px; }
+.settings-group label { display: block; font-weight: 600; margin-bottom: 4px; }
+.settings-hint { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.settings-group input[type="password"] {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 14px; font-family: var(--mono); margin-bottom: 10px;
+}
+.privacy-details { list-style: none; padding: 0; }
+.privacy-details li { padding: 6px 0; font-size: 14px; color: var(--text-muted); }
+.privacy-details li::before { content: '\2713 '; color: var(--success); font-weight: 700; }
+.settings-actions { margin-top: 24px; }
+
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(250, 250, 249, 0.9);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+}
+.loading-overlay[hidden] { display: none; }
+.loading-spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { margin-top: 16px; color: var(--text-muted); font-size: 15px; }
+
+@media (max-width: 600px) {
+  .app-header { flex-direction: column; gap: 12px; padding: 12px 16px; }
+  .input-meta { flex-direction: column; }
+  .main-content { padding: 24px 16px; }
+  .tagline { display: none; }
+}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="header-left">
+        <h1>ActionPlan</h1>
+        <span class="tagline">Reflect. Align. Act.</span>
+      </div>
+      <div class="header-right">
+        <button id="btn-objectives" class="btn btn-ghost">Objectives</button>
+        <button id="btn-history" class="btn btn-ghost">History</button>
+        <button id="btn-settings" class="btn btn-ghost">Settings</button>
+        <span class="privacy-badge" title="All data stays on your device">Local Only</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Input Panel -->
+      <section id="panel-input" class="panel panel-active">
+        <h2>What just happened?</h2>
+        <p class="panel-subtitle">Capture your meeting notes — voice or text. Be honest, be messy, we'll sort it out.</p>
+        <div class="input-meta">
+          <input type="text" id="input-meeting-title" placeholder="Meeting / conversation name (optional)" />
+          <input type="text" id="input-participants" placeholder="Who was there? (optional)" />
+        </div>
+        <div class="input-area">
+          <textarea id="input-notes" rows="8" placeholder="What happened? What was discussed? What did you commit to? What's bugging you about it?"></textarea>
+          <div class="voice-controls">
+            <button id="btn-record" class="btn btn-primary btn-record" title="Record voice note">
+              <span class="record-icon"></span>
+              <span class="record-label">Record</span>
+            </button>
+            <span id="recording-status" class="recording-status"></span>
+          </div>
+        </div>
+        <div class="input-actions">
+          <button id="btn-reflect" class="btn btn-primary btn-large" disabled>Reflect on this</button>
+        </div>
+      </section>
+
+      <!-- Reflection Output Panel -->
+      <section id="panel-reflection" class="panel" hidden>
+        <div class="reflection-header">
+          <h2 id="reflection-title">Reflection</h2>
+          <span id="reflection-date" class="reflection-date"></span>
+        </div>
+        <div id="reflection-content" class="reflection-content"></div>
+        <div class="reflection-actions">
+          <button id="btn-save-reflection" class="btn btn-primary">Save reflection</button>
+          <button id="btn-new-reflection" class="btn btn-ghost">New reflection</button>
+        </div>
+      </section>
+
+      <!-- Objectives Panel -->
+      <section id="panel-objectives" class="panel" hidden>
+        <h2>Strategic Objectives</h2>
+        <p class="panel-subtitle">Define what matters to you. Reflections will map back to these.</p>
+        <div id="objectives-list" class="objectives-list"></div>
+        <div class="add-objective">
+          <input type="text" id="input-new-objective" placeholder="Add a strategic objective (e.g. 'Ship v2 by Q2', 'Build senior team')" />
+          <button id="btn-add-objective" class="btn btn-primary">Add</button>
+        </div>
+        <div class="objectives-actions">
+          <button id="btn-back-from-objectives" class="btn btn-ghost">Back</button>
+        </div>
+      </section>
+
+      <!-- History Panel -->
+      <section id="panel-history" class="panel" hidden>
+        <h2>Reflection History</h2>
+        <p class="panel-subtitle">Your past reflections — all stored locally on this device.</p>
+        <div id="history-list" class="history-list"></div>
+        <div class="history-actions">
+          <button id="btn-export-history" class="btn btn-ghost">Export all (JSON)</button>
+          <button id="btn-clear-history" class="btn btn-danger">Clear all data</button>
+          <button id="btn-back-from-history" class="btn btn-ghost">Back</button>
+        </div>
+      </section>
+
+      <!-- Settings Panel -->
+      <section id="panel-settings" class="panel" hidden>
+        <h2>Settings</h2>
+        <div class="settings-group">
+          <label for="input-api-key">Claude API Key</label>
+          <p class="settings-hint">Your key is stored only in this browser's localStorage. It is sent directly to the Anthropic API over HTTPS — no intermediary server.</p>
+          <input type="password" id="input-api-key" placeholder="sk-ant-..." />
+          <button id="btn-save-api-key" class="btn btn-primary">Save key</button>
+        </div>
+        <div class="settings-group">
+          <h3>Data Privacy</h3>
+          <ul class="privacy-details">
+            <li>All notes and reflections are stored in your browser's localStorage</li>
+            <li>Voice recording uses the Web Speech API — audio is processed by your browser, not uploaded</li>
+            <li>The only external call is to the Anthropic API (api.anthropic.com) when you click "Reflect"</li>
+            <li>Your API key never leaves your browser except in direct API calls</li>
+            <li>No analytics, no tracking, no cookies, no server</li>
+          </ul>
+        </div>
+        <div class="settings-actions">
+          <button id="btn-back-from-settings" class="btn btn-ghost">Back</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="loading-overlay" class="loading-overlay" hidden>
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Thinking through your reflection...</p>
+    </div>
+  </div>
+
+  <script>
+// === Storage ===
+const Storage = (() => {
+  const KEYS = {
+    API_KEY: 'actionplan_api_key',
+    OBJECTIVES: 'actionplan_objectives',
+    REFLECTIONS: 'actionplan_reflections',
+  };
+
+  function get(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  function set(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+  function remove(key) { localStorage.removeItem(key); }
+
+  function getApiKey() { return localStorage.getItem(KEYS.API_KEY) || ''; }
+  function setApiKey(key) { localStorage.setItem(KEYS.API_KEY, key); }
+  function getObjectives() { return get(KEYS.OBJECTIVES) || []; }
+  function setObjectives(objectives) { set(KEYS.OBJECTIVES, objectives); }
+  function getReflections() { return get(KEYS.REFLECTIONS) || []; }
+
+  function saveReflection(reflection) {
+    const reflections = getReflections();
+    reflections.unshift(reflection);
+    set(KEYS.REFLECTIONS, reflections);
+  }
+
+  function deleteReflection(id) {
+    set(KEYS.REFLECTIONS, getReflections().filter(r => r.id !== id));
+  }
+
+  function clearAll() { remove(KEYS.OBJECTIVES); remove(KEYS.REFLECTIONS); }
+
+  function exportAll() {
+    return { objectives: getObjectives(), reflections: getReflections(), exportedAt: new Date().toISOString() };
+  }
+
+  return { getApiKey, setApiKey, getObjectives, setObjectives, getReflections, saveReflection, deleteReflection, clearAll, exportAll };
+})();
+
+// === Objectives ===
+const Objectives = (() => {
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  function render() {
+    const list = document.getElementById('objectives-list');
+    const objectives = Storage.getObjectives();
+    if (objectives.length === 0) {
+      list.innerHTML = '<p class="history-empty">No objectives yet. Add your strategic priorities above.</p>';
+      return;
+    }
+    list.innerHTML = objectives.map((obj, i) => `
+      <div class="objective-item" data-index="${i}">
+        <span class="objective-text">${escapeHtml(obj)}</span>
+        <button class="btn-remove" data-index="${i}" title="Remove">&times;</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); removeObjective(parseInt(btn.dataset.index)); });
+    });
+  }
+
+  function addObjective(text) {
+    if (!text.trim()) return;
+    const objectives = Storage.getObjectives();
+    objectives.push(text.trim());
+    Storage.setObjectives(objectives);
+    render();
+  }
+
+  function removeObjective(index) {
+    const objectives = Storage.getObjectives();
+    objectives.splice(index, 1);
+    Storage.setObjectives(objectives);
+    render();
+  }
+
+  function getAll() { return Storage.getObjectives(); }
+
+  return { render, addObjective, getAll };
+})();
+
+// === Voice ===
+const Voice = (() => {
+  let recognition = null;
+  let isRecording = false;
+
+  function isSupported() { return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window; }
+
+  function init(onResult, onStatusChange) {
+    if (!isSupported()) return false;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    let finalTranscript = '';
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) { finalTranscript += t + ' '; } else { interim += t; }
+      }
+      onResult(finalTranscript, interim);
+    };
+    recognition.onend = () => { if (isRecording) { recognition.start(); } else { onStatusChange('stopped'); } };
+    recognition.onerror = (event) => { if (event.error === 'no-speech') return; onStatusChange('error: ' + event.error); };
+    return true;
+  }
+
+  function start(onResult, onStatusChange) {
+    if (!recognition && !init(onResult, onStatusChange)) { onStatusChange('Speech recognition not supported'); return false; }
+    init(onResult, onStatusChange);
+    isRecording = true;
+    recognition.start();
+    onStatusChange('recording');
+    return true;
+  }
+
+  function stop() { isRecording = false; if (recognition) recognition.stop(); }
+  function getIsRecording() { return isRecording; }
+
+  return { isSupported, start, stop, getIsRecording };
+})();
+
+// === Reflect ===
+const Reflect = (() => {
+  function buildPrompt(notes, meetingTitle, participants, objectives) {
+    const objectivesList = objectives.length > 0
+      ? objectives.map((o, i) => '  ' + (i + 1) + '. ' + o).join('\n')
+      : '  (No objectives defined yet — provide general productivity guidance)';
+
+    return 'You are a sharp, honest personal reflection coach. A user has just finished a meeting or conversation and is telling you what happened. Your job is to help them extract signal from noise, challenge them on time management, and map everything back to their strategic objectives.\n\nHere are their strategic objectives:\n' + objectivesList + '\n\nMeeting/conversation: ' + (meetingTitle || 'Untitled') + '\nParticipants: ' + (participants || 'Not specified') + '\n\nTheir raw notes:\n---\n' + notes + '\n---\n\nRespond with a structured reflection in this EXACT JSON format (no markdown, just valid JSON):\n{\n  "summary": "1-2 sentence summary of what actually happened",\n  "decisions": ["list of decisions that were made or implied"],\n  "action_items": [\n    {\n      "task": "what needs to be done",\n      "owner": "who should do it (if mentioned)",\n      "objective": "which strategic objective this maps to, or null"\n    }\n  ],\n  "insights": ["key things learned, realized, or that shifted thinking"],\n  "open_questions": ["unresolved questions or ambiguities"],\n  "objective_alignment": [\n    {\n      "objective": "the strategic objective",\n      "status": "advancing | stalled | at risk | not addressed",\n      "note": "brief explanation"\n    }\n  ],\n  "time_challenge": "A direct, honest 2-3 sentence challenge to the user about their time management based on what they described. Be constructive but don\'t be soft. Ask them a hard question about whether this meeting was the best use of their time, or what they\'d do differently.",\n  "energy_read": "One sentence on the emotional/energy tone you detect from their notes — are they energized, frustrated, scattered, focused?"\n}\n\nBe concise. Be honest. Don\'t pad the output. If the notes are vague, say so and push back.';
+  }
+
+  async function analyze(notes, meetingTitle, participants) {
+    const apiKey = Storage.getApiKey();
+    if (!apiKey) throw new Error('No API key set. Go to Settings to add your Claude API key.');
+
+    const objectives = Objectives.getAll();
+    const prompt = buildPrompt(notes, meetingTitle, participants, objectives);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      if (response.status === 401) throw new Error('Invalid API key. Check your key in Settings.');
+      throw new Error('API error (' + response.status + '): ' + err);
+    }
+
+    const data = await response.json();
+    const text = data.content[0].text;
+    let jsonStr = text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) jsonStr = jsonMatch[0];
+    return JSON.parse(jsonStr);
+  }
+
+  return { analyze };
+})();
+
+// === History ===
+const History = (() => {
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  function render() {
+    const list = document.getElementById('history-list');
+    const reflections = Storage.getReflections();
+    if (reflections.length === 0) {
+      list.innerHTML = '<p class="history-empty">No reflections yet. Complete your first one to see it here.</p>';
+      return;
+    }
+    list.innerHTML = reflections.map(r => `
+      <div class="history-item" data-id="${r.id}">
+        <div class="history-item-title">${escapeHtml(r.title || 'Untitled reflection')}</div>
+        <div class="history-item-date">${new Date(r.timestamp).toLocaleString()}</div>
+        <div class="history-item-preview">${escapeHtml(r.reflection.summary || '')}</div>
+      </div>
+    `).join('');
+    list.querySelectorAll('.history-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const r = reflections.find(r => r.id === item.dataset.id);
+        if (r) { renderReflectionContent(r.reflection, r.title, r.timestamp); App.showPanel('reflection'); }
+      });
+    });
+  }
+
+  function renderReflectionContent(reflection, title, timestamp) {
+    document.getElementById('reflection-title').textContent = title || 'Reflection';
+    document.getElementById('reflection-date').textContent = timestamp ? new Date(timestamp).toLocaleString() : '';
+    const container = document.getElementById('reflection-content');
+    let html = '';
+
+    if (reflection.summary) {
+      html += '<div class="reflection-section"><h3>Summary</h3><p>' + escapeHtml(reflection.summary) + '</p></div>';
+    }
+    if (reflection.energy_read) {
+      html += '<div class="reflection-section"><h3>Energy Read</h3><p>' + escapeHtml(reflection.energy_read) + '</p></div>';
+    }
+    if (reflection.decisions && reflection.decisions.length > 0) {
+      html += '<div class="reflection-section"><h3>Decisions Made</h3><ul>' + reflection.decisions.map(d => '<li>' + escapeHtml(d) + '</li>').join('') + '</ul></div>';
+    }
+    if (reflection.action_items && reflection.action_items.length > 0) {
+      html += '<div class="reflection-section"><h3>Action Items</h3><ul>' + reflection.action_items.map(a => {
+        let text = escapeHtml(a.task);
+        if (a.owner) text += ' <strong>(' + escapeHtml(a.owner) + ')</strong>';
+        if (a.objective) text += ' <span class="objective-tag">' + escapeHtml(a.objective) + '</span>';
+        return '<li>' + text + '</li>';
+      }).join('') + '</ul></div>';
+    }
+    if (reflection.insights && reflection.insights.length > 0) {
+      html += '<div class="reflection-section"><h3>Insights</h3><ul>' + reflection.insights.map(i => '<li>' + escapeHtml(i) + '</li>').join('') + '</ul></div>';
+    }
+    if (reflection.open_questions && reflection.open_questions.length > 0) {
+      html += '<div class="reflection-section"><h3>Open Questions</h3><ul>' + reflection.open_questions.map(q => '<li>' + escapeHtml(q) + '</li>').join('') + '</ul></div>';
+    }
+    if (reflection.objective_alignment && reflection.objective_alignment.length > 0) {
+      const colors = { 'advancing': '#16a34a', 'stalled': '#d97706', 'at risk': '#dc2626', 'not addressed': '#78716c' };
+      html += '<div class="reflection-section"><h3>Objective Alignment</h3><ul>' + reflection.objective_alignment.map(a => {
+        const color = colors[a.status] || '#78716c';
+        return '<li><strong style="color:' + color + '">[' + escapeHtml(a.status).toUpperCase() + ']</strong> ' + escapeHtml(a.objective) + ' \u2014 ' + escapeHtml(a.note) + '</li>';
+      }).join('') + '</ul></div>';
+    }
+    if (reflection.time_challenge) {
+      html += '<div class="time-challenge"><h3>Time Management Challenge</h3><p>' + escapeHtml(reflection.time_challenge) + '</p></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function exportAll() {
+    const data = Storage.exportAll();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'actionplan-export-' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return { render, renderReflectionContent, exportAll };
+})();
+
+// === App ===
+const App = (() => {
+  let currentPanel = 'input';
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => { p.hidden = true; p.classList.remove('panel-active'); });
+    const panel = document.getElementById('panel-' + name);
+    if (panel) { panel.hidden = false; panel.classList.add('panel-active'); currentPanel = name; }
+  }
+
+  function init() {
+    document.getElementById('btn-objectives').addEventListener('click', () => { Objectives.render(); showPanel('objectives'); });
+    document.getElementById('btn-history').addEventListener('click', () => { History.render(); showPanel('history'); });
+    document.getElementById('btn-settings').addEventListener('click', () => { document.getElementById('input-api-key').value = Storage.getApiKey(); showPanel('settings'); });
+
+    document.getElementById('btn-back-from-objectives').addEventListener('click', () => showPanel('input'));
+    document.getElementById('btn-back-from-history').addEventListener('click', () => showPanel('input'));
+    document.getElementById('btn-back-from-settings').addEventListener('click', () => showPanel('input'));
+
+    document.getElementById('btn-save-api-key').addEventListener('click', () => {
+      Storage.setApiKey(document.getElementById('input-api-key').value.trim());
+      showPanel('input');
+    });
+
+    document.getElementById('btn-add-objective').addEventListener('click', () => {
+      const input = document.getElementById('input-new-objective');
+      Objectives.addObjective(input.value);
+      input.value = '';
+    });
+    document.getElementById('input-new-objective').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('btn-add-objective').click(); });
+
+    const notesInput = document.getElementById('input-notes');
+    const reflectBtn = document.getElementById('btn-reflect');
+    notesInput.addEventListener('input', () => { reflectBtn.disabled = notesInput.value.trim().length === 0; });
+
+    const recordBtn = document.getElementById('btn-record');
+    const recordingStatus = document.getElementById('recording-status');
+    if (!Voice.isSupported()) {
+      recordBtn.disabled = true;
+      recordingStatus.textContent = 'Voice not supported \u2014 use Chrome or Edge';
+    }
+
+    recordBtn.addEventListener('click', () => {
+      if (Voice.getIsRecording()) {
+        Voice.stop();
+        recordBtn.classList.remove('recording');
+        recordBtn.querySelector('.record-label').textContent = 'Record';
+        recordingStatus.textContent = '';
+      } else {
+        const started = Voice.start(
+          (final, interim) => {
+            const current = notesInput.value;
+            const beforeVoice = current.split('\n[Voice] ')[0];
+            notesInput.value = beforeVoice + (beforeVoice ? '\n' : '') + '[Voice] ' + final + interim;
+            notesInput.dispatchEvent(new Event('input'));
+          },
+          (status) => {
+            if (status === 'recording') recordingStatus.textContent = 'Listening...';
+            else if (status === 'stopped') recordingStatus.textContent = '';
+            else recordingStatus.textContent = status;
+          }
+        );
+        if (started) { recordBtn.classList.add('recording'); recordBtn.querySelector('.record-label').textContent = 'Stop'; }
+      }
+    });
+
+    reflectBtn.addEventListener('click', async () => {
+      const notes = notesInput.value.trim();
+      if (!notes) return;
+      const title = document.getElementById('input-meeting-title').value.trim();
+      const participants = document.getElementById('input-participants').value.trim();
+      if (!Storage.getApiKey()) { showPanel('settings'); document.getElementById('input-api-key').focus(); return; }
+
+      document.getElementById('loading-overlay').hidden = false;
+      try {
+        const reflection = await Reflect.analyze(notes, title, participants);
+        History.renderReflectionContent(reflection, title || 'Reflection', new Date().toISOString());
+        App._pendingReflection = {
+          id: crypto.randomUUID(), title: title || 'Untitled reflection',
+          participants, notes, reflection, timestamp: new Date().toISOString(),
+        };
+        showPanel('reflection');
+      } catch (err) {
+        alert('Reflection failed: ' + err.message);
+      } finally {
+        document.getElementById('loading-overlay').hidden = true;
+      }
+    });
+
+    document.getElementById('btn-save-reflection').addEventListener('click', () => {
+      if (App._pendingReflection) {
+        Storage.saveReflection(App._pendingReflection);
+        App._pendingReflection = null;
+        showPanel('input');
+        notesInput.value = '';
+        document.getElementById('input-meeting-title').value = '';
+        document.getElementById('input-participants').value = '';
+        reflectBtn.disabled = true;
+      }
+    });
+
+    document.getElementById('btn-new-reflection').addEventListener('click', () => showPanel('input'));
+    document.getElementById('btn-export-history').addEventListener('click', History.exportAll);
+    document.getElementById('btn-clear-history').addEventListener('click', () => {
+      if (confirm('This will delete ALL reflections and objectives. This cannot be undone. Continue?')) { Storage.clearAll(); showPanel('input'); }
+    });
+
+    showPanel('input');
+    if (!Storage.getApiKey()) recordingStatus.textContent = 'Tip: Set your API key in Settings to get started';
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+  return { showPanel };
+})();
+  </script>
+</body>
+</html>
