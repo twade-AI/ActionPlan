@@ -327,6 +327,7 @@ textarea {
         <span class="tagline">Reflect. Align. Act.</span>
       </div>
       <div class="header-right">
+        <button id="btn-home" class="btn btn-ghost">Home</button>
         <button id="btn-history" class="btn btn-ghost">History</button>
         <button id="btn-settings" class="btn btn-ghost">Settings</button>
         <span class="privacy-badge" title="All data stays on your device">Local Only</span>
@@ -1290,6 +1291,7 @@ const App = (() => {
     }
 
     document.getElementById('btn-objectives').addEventListener('click', () => { Objectives.render(); showPanel('objectives'); });
+    document.getElementById('btn-home').addEventListener('click', () => { updateGlance(); showPanel('input'); });
     document.getElementById('btn-dashboard').addEventListener('click', () => { Dashboard.render(); showPanel('dashboard'); });
     document.getElementById('btn-action-items').addEventListener('click', () => { ActionItems.render(); showPanel('action-items'); });
     document.getElementById('btn-risks').addEventListener('click', () => { Risks.render(); showPanel('risks'); });
