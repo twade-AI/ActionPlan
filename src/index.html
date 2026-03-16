@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ActionPlan — Meeting Reflection Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1>ActionPlan</h1>
+        <span class="tagline">Reflect. Align. Act.</span>
+      </div>
+      <div class="header-right">
+        <button id="btn-objectives" class="btn btn-ghost">Objectives</button>
+        <button id="btn-history" class="btn btn-ghost">History</button>
+        <button id="btn-settings" class="btn btn-ghost">Settings</button>
+        <span class="privacy-badge" title="All data stays on your device">Local Only</span>
+      </div>
+    </header>
+
+    <!-- Main content area -->
+    <main class="main-content">
+
+      <!-- Input Panel -->
+      <section id="panel-input" class="panel panel-active">
+        <h2>What just happened?</h2>
+        <p class="panel-subtitle">Capture your meeting notes — voice or text. Be honest, be messy, we'll sort it out.</p>
+
+        <div class="input-meta">
+          <input type="text" id="input-meeting-title" placeholder="Meeting / conversation name (optional)" />
+          <input type="text" id="input-participants" placeholder="Who was there? (optional)" />
+        </div>
+
+        <div class="input-area">
+          <textarea id="input-notes" rows="8" placeholder="What happened? What was discussed? What did you commit to? What's bugging you about it?"></textarea>
+          <div class="voice-controls">
+            <button id="btn-record" class="btn btn-primary btn-record" title="Record voice note">
+              <span class="record-icon"></span>
+              <span class="record-label">Record</span>
+            </button>
+            <span id="recording-status" class="recording-status"></span>
+          </div>
+        </div>
+
+        <div class="input-actions">
+          <button id="btn-reflect" class="btn btn-primary btn-large" disabled>Reflect on this</button>
+        </div>
+      </section>
+
+      <!-- Reflection Output Panel -->
+      <section id="panel-reflection" class="panel" hidden>
+        <div class="reflection-header">
+          <h2 id="reflection-title">Reflection</h2>
+          <span id="reflection-date" class="reflection-date"></span>
+        </div>
+        <div id="reflection-content" class="reflection-content">
+          <!-- Dynamically populated -->
+        </div>
+        <div class="reflection-actions">
+          <button id="btn-save-reflection" class="btn btn-primary">Save reflection</button>
+          <button id="btn-new-reflection" class="btn btn-ghost">New reflection</button>
+        </div>
+      </section>
+
+      <!-- Objectives Panel -->
+      <section id="panel-objectives" class="panel" hidden>
+        <h2>Strategic Objectives</h2>
+        <p class="panel-subtitle">Define what matters to you. Reflections will map back to these.</p>
+
+        <div id="objectives-list" class="objectives-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="add-objective">
+          <input type="text" id="input-new-objective" placeholder="Add a strategic objective (e.g. 'Ship v2 by Q2', 'Build senior team')" />
+          <button id="btn-add-objective" class="btn btn-primary">Add</button>
+        </div>
+
+        <div class="objectives-actions">
+          <button id="btn-back-from-objectives" class="btn btn-ghost">Back</button>
+        </div>
+      </section>
+
+      <!-- History Panel -->
+      <section id="panel-history" class="panel" hidden>
+        <h2>Reflection History</h2>
+        <p class="panel-subtitle">Your past reflections — all stored locally on this device.</p>
+
+        <div id="history-list" class="history-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="history-actions">
+          <button id="btn-export-history" class="btn btn-ghost">Export all (JSON)</button>
+          <button id="btn-clear-history" class="btn btn-danger">Clear all data</button>
+          <button id="btn-back-from-history" class="btn btn-ghost">Back</button>
+        </div>
+      </section>
+
+      <!-- Settings Panel -->
+      <section id="panel-settings" class="panel" hidden>
+        <h2>Settings</h2>
+
+        <div class="settings-group">
+          <label for="input-api-key">Claude API Key</label>
+          <p class="settings-hint">Your key is stored only in this browser's localStorage. It is sent directly to the Anthropic API over HTTPS — no intermediary server.</p>
+          <input type="password" id="input-api-key" placeholder="sk-ant-..." />
+          <button id="btn-save-api-key" class="btn btn-primary">Save key</button>
+        </div>
+
+        <div class="settings-group">
+          <h3>Data Privacy</h3>
+          <ul class="privacy-details">
+            <li>All notes and reflections are stored in your browser's localStorage</li>
+            <li>Voice recording uses the Web Speech API — audio is processed by your browser, not uploaded</li>
+            <li>The only external call is to the Anthropic API (api.anthropic.com) when you click "Reflect"</li>
+            <li>Your API key never leaves your browser except in direct API calls</li>
+            <li>No analytics, no tracking, no cookies, no server</li>
+          </ul>
+        </div>
+
+        <div class="settings-actions">
+          <button id="btn-back-from-settings" class="btn btn-ghost">Back</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" hidden>
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Thinking through your reflection...</p>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/objectives.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/reflect.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

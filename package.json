@@ -1,0 +1,11 @@
+{
+  "name": "actionplan-reflection-tool",
+  "version": "1.0.0",
+  "description": "Privacy-first meeting reflection tool that maps insights to strategic objectives",
+  "scripts": {
+    "dev": "npx serve src -l 3000",
+    "start": "npx serve src -l 3000"
+  },
+  "keywords": ["reflection", "meetings", "productivity", "privacy"],
+  "license": "MIT"
+}
