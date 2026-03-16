@@ -193,6 +193,56 @@ textarea {
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { margin-top: 16px; color: var(--text-muted); font-size: 15px; }
 
+/* Dashboard */
+.dashboard-section { margin-bottom: 40px; }
+.dashboard-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+
+.dashboard-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;
+}
+
+.action-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; box-shadow: var(--shadow); transition: all 0.2s;
+}
+.action-card:hover { box-shadow: var(--shadow-lg); }
+
+.action-card-status {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 10px;
+  border-radius: 12px; margin-bottom: 8px; text-transform: uppercase;
+}
+.action-card-status.on-track { background: #dcfce7; color: var(--success); }
+.action-card-status.at-risk { background: #fef08a; color: #92400e; }
+.action-card-status.overdue { background: #fee2e2; color: var(--danger); }
+.action-card-status.completed { background: #e0e7ff; color: #4f46e5; }
+
+.action-card-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; line-height: 1.4; }
+.action-card-timeline { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.action-card-owner { font-size: 12px; color: var(--text-muted); }
+.action-card-owner::before { content: '👤 '; }
+
+.time-allocation { text-align: center; padding: 20px; }
+.time-legend {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 20px;
+}
+.time-legend-item {
+  display: flex; align-items: center; gap: 8px; font-size: 14px;
+}
+.time-legend-color { width: 16px; height: 16px; border-radius: 50%; }
+
+.weekly-summary {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; box-shadow: var(--shadow);
+}
+.weekly-summary h4 {
+  font-size: 14px; font-weight: 700; margin-bottom: 10px; margin-top: 16px; color: var(--text);
+}
+.weekly-summary h4:first-child { margin-top: 0; }
+.weekly-summary ul { list-style: none; padding: 0; }
+.weekly-summary li { padding: 6px 0; font-size: 14px; line-height: 1.5; }
+.weekly-summary li::before { content: '→ '; color: var(--primary); font-weight: 600; }
+.weekly-summary-empty { color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px; }
+
 @media (max-width: 600px) {
   .app-header { flex-direction: column; gap: 12px; padding: 12px 16px; }
   .input-meta { flex-direction: column; }
@@ -209,6 +259,7 @@ textarea {
         <span class="tagline">Reflect. Align. Act.</span>
       </div>
       <div class="header-right">
+        <button id="btn-dashboard" class="btn btn-ghost">Dashboard</button>
         <button id="btn-objectives" class="btn btn-ghost">Objectives</button>
         <button id="btn-history" class="btn btn-ghost">History</button>
         <button id="btn-settings" class="btn btn-ghost">Settings</button>
@@ -237,6 +288,41 @@ textarea {
         </div>
         <div class="input-actions">
           <button id="btn-reflect" class="btn btn-primary btn-large" disabled>Reflect on this</button>
+        </div>
+      </section>
+
+      <!-- Dashboard Panel -->
+      <section id="panel-dashboard" class="panel" hidden>
+        <h2>Dashboard</h2>
+        <p class="panel-subtitle">Your action plan at a glance. Track progress, time allocation, and weekly achievements.</p>
+
+        <!-- Progress Dashboard -->
+        <div class="dashboard-section">
+          <h3>Action Plan Progress</h3>
+          <div id="dashboard-items" class="dashboard-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Time Allocation -->
+        <div class="dashboard-section">
+          <h3>Time Allocation (This Week)</h3>
+          <div id="time-allocation-container" class="time-allocation">
+            <canvas id="time-chart" style="max-width: 400px; margin: 0 auto;"></canvas>
+            <div id="time-legend" class="time-legend"></div>
+          </div>
+        </div>
+
+        <!-- Weekly Summary -->
+        <div class="dashboard-section">
+          <h3>Weekly Summary</h3>
+          <div id="weekly-summary" class="weekly-summary">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button id="btn-back-from-dashboard" class="btn btn-ghost">Back</button>
         </div>
       </section>
 
@@ -521,6 +607,228 @@ const Reflect = (() => {
 })();
 
 // === History ===
+// === Dashboard ===
+const Dashboard = (() => {
+  // Parse action items from action plan text
+  function parseActionItems() {
+    const plan = Storage.getActionPlan();
+    const items = [];
+    const lines = plan.split('\n');
+    let current = null;
+
+    for (const line of lines) {
+      if (/^\d+\./.test(line.trim())) {
+        if (current) items.push(current);
+        const match = line.match(/^\d+\.\s+(.+?)(?:\s*\(|$)/);
+        current = { title: match ? match[1].trim() : line.trim(), timeline: '', category: '', kpi: '' };
+      } else if (line.includes('Timeline:') && current) {
+        current.timeline = line.replace(/Timeline:\s*/i, '').trim();
+      } else if (line.includes('Task:') && current) {
+        current.task = line.replace(/Task:\s*/i, '').trim();
+      } else if (line.includes('KPI:') && current) {
+        current.kpi = line.replace(/KPI:\s*/i, '').trim();
+      } else if (line.includes('Owner:') && current) {
+        current.owner = line.replace(/Owner:\s*/i, '').trim();
+      }
+      // Categorize by keywords
+      if (current && !current.category) {
+        if (line.toLowerCase().includes('technology') || line.toLowerCase().includes('personalisation')) {
+          current.category = 'Technology';
+        } else if (line.toLowerCase().includes('enterprise') || line.toLowerCase().includes('leadership')) {
+          current.category = 'Enterprise';
+        } else if (line.toLowerCase().includes('heg') || line.toLowerCase().includes('education group')) {
+          current.category = 'HEG';
+        } else if (line.toLowerCase().includes('elt') || line.toLowerCase().includes('dashboard')) {
+          current.category = 'ELT Dashboard';
+        }
+      }
+    }
+    if (current) items.push(current);
+    return items;
+  }
+
+  // Determine status based on timeline
+  function getStatus(timeline) {
+    if (!timeline) return 'pending';
+    if (timeline.toLowerCase() === 'ongoing') return 'on-track';
+
+    const monthMap = { 'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12 };
+    const match = timeline.match(/(\w+)\s+(\d+)/i);
+    if (!match) return 'pending';
+
+    const month = monthMap[match[1].toLowerCase().slice(0, 3)];
+    const day = parseInt(match[2]);
+    const targetDate = new Date(2025, month - 1, day);
+    const today = new Date();
+    const daysLeft = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+
+    if (daysLeft < 0) return 'overdue';
+    if (daysLeft < 30) return 'at-risk';
+    return 'on-track';
+  }
+
+  // Calculate time spent on each category from reflections
+  function calculateTimeAllocation() {
+    const reflections = Storage.getReflections();
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const weekReflections = reflections.filter(r => new Date(r.timestamp) > oneWeekAgo);
+    const categories = { 'Technology': 0, 'Enterprise': 0, 'HEG': 0, 'ELT Dashboard': 0, 'Other': 0 };
+
+    for (const r of weekReflections) {
+      const notes = (r.notes || '').toLowerCase();
+      let counted = false;
+
+      if (notes.includes('technology') || notes.includes('personalisation') || notes.includes('digital')) {
+        categories['Technology'] += 1; counted = true;
+      }
+      if (notes.includes('enterprise') || notes.includes('leadership') || notes.includes('programme')) {
+        categories['Enterprise'] += 1; counted = true;
+      }
+      if (notes.includes('heg') || notes.includes('education group')) {
+        categories['HEG'] += 1; counted = true;
+      }
+      if (notes.includes('elt') || notes.includes('dashboard')) {
+        categories['ELT Dashboard'] += 1; counted = true;
+      }
+      if (!counted) categories['Other'] += 1;
+    }
+
+    return categories;
+  }
+
+  // Generate weekly summary
+  function generateWeeklySummary() {
+    const reflections = Storage.getReflections();
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const weekReflections = reflections.filter(r => new Date(r.timestamp) > oneWeekAgo);
+
+    let summary = {
+      decisions: [],
+      accomplishments: [],
+      blockers: [],
+      openQuestions: []
+    };
+
+    for (const r of weekReflections) {
+      if (r.reflection.decisions) summary.decisions.push(...r.reflection.decisions);
+      if (r.reflection.insights) summary.accomplishments.push(...r.reflection.insights);
+      if (r.reflection.open_questions) summary.openQuestions.push(...r.reflection.open_questions);
+    }
+
+    summary.decisions = [...new Set(summary.decisions)].slice(0, 5);
+    summary.accomplishments = [...new Set(summary.accomplishments)].slice(0, 5);
+    summary.openQuestions = [...new Set(summary.openQuestions)].slice(0, 5);
+
+    return summary;
+  }
+
+  function render() {
+    renderProgressDashboard();
+    renderTimeAllocation();
+    renderWeeklySummary();
+  }
+
+  function renderProgressDashboard() {
+    const container = document.getElementById('dashboard-items');
+    const items = parseActionItems();
+
+    container.innerHTML = items.map(item => {
+      const status = getStatus(item.timeline);
+      return `
+        <div class="action-card">
+          <span class="action-card-status ${status}">${status}</span>
+          <div class="action-card-title">${escapeHtml(item.title)}</div>
+          <div class="action-card-timeline">📅 ${escapeHtml(item.timeline || 'No date set')}</div>
+          ${item.owner ? `<div class="action-card-owner">${escapeHtml(item.owner)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderTimeAllocation() {
+    const allocation = calculateTimeAllocation();
+    const total = Object.values(allocation).reduce((a, b) => a + b, 0);
+
+    if (total === 0) {
+      document.getElementById('time-allocation-container').innerHTML = '<p class="weekly-summary-empty">No reflections this week yet.</p>';
+      return;
+    }
+
+    const colors = { 'Technology': '#2563eb', 'Enterprise': '#7c3aed', 'HEG': '#06b6d4', 'ELT Dashboard': '#f59e0b', 'Other': '#6b7280' };
+    const labels = Object.keys(allocation).filter(k => allocation[k] > 0);
+    const data = labels.map(k => allocation[k]);
+    const categoryColors = labels.map(k => colors[k]);
+
+    const canvas = document.getElementById('time-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Simple pie chart using canvas
+    const radius = Math.min(canvas.width, canvas.height) / 2 - 10;
+    let angle = 0;
+
+    canvas.width = 300;
+    canvas.height = 300;
+    ctx.translate(150, 150);
+
+    const total2 = data.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < data.length; i++) {
+      const sliceAngle = (data[i] / total2) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, angle, angle + sliceAngle);
+      ctx.lineTo(0, 0);
+      ctx.fillStyle = categoryColors[i];
+      ctx.fill();
+      angle += sliceAngle;
+    }
+
+    const legend = document.getElementById('time-legend');
+    legend.innerHTML = labels.map((label, i) => `
+      <div class="time-legend-item">
+        <div class="time-legend-color" style="background: ${categoryColors[i]}"></div>
+        <span>${label}: ${data[i]} meeting${data[i] > 1 ? 's' : ''}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderWeeklySummary() {
+    const summary = generateWeeklySummary();
+    const container = document.getElementById('weekly-summary');
+
+    if (!summary.accomplishments.length && !summary.decisions.length && !summary.openQuestions.length) {
+      container.innerHTML = '<p class="weekly-summary-empty">No reflections this week yet.</p>';
+      return;
+    }
+
+    let html = '';
+    if (summary.accomplishments.length > 0) {
+      html += '<h4>Key Accomplishments & Insights</h4><ul>' + summary.accomplishments.map(a => `<li>${escapeHtml(a)}</li>`).join('') + '</ul>';
+    }
+    if (summary.decisions.length > 0) {
+      html += '<h4>Decisions Made</h4><ul>' + summary.decisions.map(d => `<li>${escapeHtml(d)}</li>`).join('') + '</ul>';
+    }
+    if (summary.openQuestions.length > 0) {
+      html += '<h4>Open Questions</h4><ul>' + summary.openQuestions.map(q => `<li>${escapeHtml(q)}</li>`).join('') + '</ul>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  return { render };
+})();
+
 const History = (() => {
   function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
@@ -677,6 +985,7 @@ const App = (() => {
     }
 
     document.getElementById('btn-objectives').addEventListener('click', () => { Objectives.render(); showPanel('objectives'); });
+    document.getElementById('btn-dashboard').addEventListener('click', () => { Dashboard.render(); showPanel('dashboard'); });
     document.getElementById('btn-history').addEventListener('click', () => { History.render(); showPanel('history'); });
     document.getElementById('btn-settings').addEventListener('click', () => {
       document.getElementById('input-api-key').value = Storage.getApiKey();
@@ -686,6 +995,7 @@ const App = (() => {
     });
 
     document.getElementById('btn-back-from-objectives').addEventListener('click', () => showPanel('input'));
+    document.getElementById('btn-back-from-dashboard').addEventListener('click', () => showPanel('input'));
     document.getElementById('btn-back-from-history').addEventListener('click', () => showPanel('input'));
     document.getElementById('btn-back-from-settings').addEventListener('click', () => showPanel('input'));
 
