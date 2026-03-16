@@ -243,6 +243,24 @@ textarea {
 .weekly-summary li::before { content: '→ '; color: var(--primary); font-weight: 600; }
 .weekly-summary-empty { color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px; }
 
+/* At-a-glance strip */
+.glance-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border);
+}
+
+.glance-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 8px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; transition: all 0.15s;
+  box-shadow: var(--shadow); font-family: var(--font);
+}
+.glance-card:hover { box-shadow: var(--shadow-lg); border-color: var(--primary); }
+
+.glance-icon { font-size: 20px; }
+.glance-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.glance-value { font-size: 18px; font-weight: 700; color: var(--text); }
+
 /* Action Items & Risks */
 .filter-bar {
   display: flex; gap: 12px; margin-bottom: 20px;
@@ -297,6 +315,7 @@ textarea {
   .input-meta { flex-direction: column; }
   .main-content { padding: 24px 16px; }
   .tagline { display: none; }
+  .glance-strip { grid-template-columns: repeat(2, 1fr); }
 }
   </style>
 </head>
@@ -308,10 +327,6 @@ textarea {
         <span class="tagline">Reflect. Align. Act.</span>
       </div>
       <div class="header-right">
-        <button id="btn-dashboard" class="btn btn-ghost">Dashboard</button>
-        <button id="btn-action-items" class="btn btn-ghost">To-Do</button>
-        <button id="btn-risks" class="btn btn-ghost">Risks</button>
-        <button id="btn-objectives" class="btn btn-ghost">Objectives</button>
         <button id="btn-history" class="btn btn-ghost">History</button>
         <button id="btn-settings" class="btn btn-ghost">Settings</button>
         <span class="privacy-badge" title="All data stays on your device">Local Only</span>
@@ -339,6 +354,30 @@ textarea {
         </div>
         <div class="input-actions">
           <button id="btn-reflect" class="btn btn-primary btn-large" disabled>Reflect on this</button>
+        </div>
+
+        <!-- At-a-glance strip -->
+        <div class="glance-strip">
+          <button id="btn-dashboard" class="glance-card" title="View Dashboard">
+            <span class="glance-icon">📊</span>
+            <span class="glance-label">Dashboard</span>
+            <span id="glance-progress" class="glance-value">-</span>
+          </button>
+          <button id="btn-action-items" class="glance-card" title="View To-Do List">
+            <span class="glance-icon">✅</span>
+            <span class="glance-label">To-Do</span>
+            <span id="glance-todos" class="glance-value">-</span>
+          </button>
+          <button id="btn-risks" class="glance-card" title="View Risks">
+            <span class="glance-icon">⚠️</span>
+            <span class="glance-label">Risks</span>
+            <span id="glance-risks" class="glance-value">-</span>
+          </button>
+          <button id="btn-objectives" class="glance-card" title="View Objectives">
+            <span class="glance-icon">🎯</span>
+            <span class="glance-label">Objectives</span>
+            <span id="glance-objectives" class="glance-value">-</span>
+          </button>
         </div>
       </section>
 
@@ -1358,6 +1397,7 @@ const App = (() => {
         document.getElementById('input-meeting-title').value = '';
         document.getElementById('input-participants').value = '';
         reflectBtn.disabled = true;
+        updateGlance();
       }
     });
 
@@ -1382,11 +1422,26 @@ const App = (() => {
     }
 
     showPanel('input');
+    updateGlance();
     if (!Storage.getApiKey()) recordingStatus.textContent = 'Tip: Set your API key in Settings to get started';
   }
 
+  function updateGlance() {
+    const reflections = Storage.getReflections();
+    const objectives = Storage.getObjectives();
+    const actionItems = ActionItems.getAllActionItems();
+    const risks = Risks.detectRisks();
+
+    const pending = actionItems.filter(a => a.status !== 'completed').length;
+
+    document.getElementById('glance-progress').textContent = reflections.length;
+    document.getElementById('glance-todos').textContent = pending || '0';
+    document.getElementById('glance-risks').textContent = risks.length || '0';
+    document.getElementById('glance-objectives').textContent = objectives.length || '0';
+  }
+
   document.addEventListener('DOMContentLoaded', init);
-  return { showPanel };
+  return { showPanel, updateGlance };
 })();
   </script>
 </body>
