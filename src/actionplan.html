@@ -616,6 +616,66 @@ const App = (() => {
   }
 
   function init() {
+    // Initialize default action plan if empty
+    if (!Storage.getActionPlan()) {
+      const defaultActionPlan = `Director of Digital Innovation and Enterprise Action Plan:
+
+1. Technology & Personalisation
+   Task: Address the question of how to use technology to support personalisation of learning.
+   KPI: Clear strategic plan for technology use and learning personalisation developed.
+   Timeline: Ongoing
+   Owner: Tom Wade ALT
+
+2. Enterprise and Leadership: Parent/OH Dinner
+   Task: Identify and invite 8-10 parents or OHs (Old Haileburians) for dinner.
+   KPI: 8-10 parents/OHs identified and invited; commitment secured for the L6th programme.
+   Timeline: April 26
+   Owner: Tom Wade Development and Engagement Office, parents/alumni (OHs)
+
+3. Enterprise and Leadership: L6th Autumn Programme
+   Task: Develop and launch an L6th autumn programme with work-place simulated exercises across specified sectors.
+   KPI: Programme content and structure finalized; L6th cohorts created.
+   Timeline: To start in September
+   Owner: Amy, Marika, parents/alumni and their teams (Finance, Tech, Engineering, Law, Self start-ups)
+
+4. Enterprise and Leadership: Program Logistics
+   Task: Finalise program logistics (vehicle to choose and launch, dates for teams to advertise, presentation at business HQ).
+   KPI: Logistics plan completed; specific time slot confirmed (e.g., 4-6 pm); Rota of pupils/cohorts defined.
+   Timeline: Before September (for launch)
+   Owner: Amy, Marika, collaborating teams
+
+5. HEG (Haileybury Education Group): Cross-Group Meeting
+   Task: Reach out to HEG (HT, Khaz, Malta, Bangladesh) to work together and share best practice.
+   KPI: Date in the diary for a cross-group meeting, conference, or working group (2-hour presentation/CPD).
+   Timeline: May 26
+   Owner: Maghin (to introduce/give credentials)
+
+6. HEG: Feeder Schools Coordination
+   Task: Coordinate with EADT to reach out to feeder schools (Heath Mount, Duncombe, Aldwickbury, Beachwood Park) for support.
+   KPI: Coordinated support plan with EADT and feeder schools finalized.
+   Timeline: May 26
+   Owner: EADT, Parents, teachers, pupils, Feeder Schools
+
+7. HEG: Parent Engagement Webinars
+   Task: Plan and execute parent engagement webinars.
+   KPI: Webinars successfully planned and conducted.
+   Timeline: Sept 26
+   Owner: Tom Wade
+
+8. ELT Dashboard: Initial Meeting
+   Task: Arrange a meeting with Hannah regarding the ELT dashboard.
+   KPI: Meeting with Hannah confirmed and executed.
+   Timeline: March 26
+   Owner: Hannah Young
+
+9. ELT Dashboard: Metrics & Planning
+   Task: Plan the ELT Dashboard to track key indicators across the school (People, Provision, Place, Finance, Academic, Co-Curricular, Pastoral).
+   KPI: Key metrics for the ELT dashboard defined.
+   Timeline: March 26
+   Owner: Tom Wade, Duncan Spooner-Wells`;
+      Storage.setActionPlan(defaultActionPlan);
+    }
+
     document.getElementById('btn-objectives').addEventListener('click', () => { Objectives.render(); showPanel('objectives'); });
     document.getElementById('btn-history').addEventListener('click', () => { History.render(); showPanel('history'); });
     document.getElementById('btn-settings').addEventListener('click', () => {
