@@ -289,6 +289,18 @@ textarea {
           <button id="btn-save-api-key" class="btn btn-primary">Save key</button>
         </div>
         <div class="settings-group">
+          <label for="input-job-description">Job Description</label>
+          <p class="settings-hint">Paste your job description here. It will be used to contextualize your reflections.</p>
+          <textarea id="input-job-description" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: var(--font); min-height: 150px; margin-bottom: 10px;"></textarea>
+          <button id="btn-save-job-description" class="btn btn-primary">Save</button>
+        </div>
+        <div class="settings-group">
+          <label for="input-action-plan">Current Action Plan</label>
+          <p class="settings-hint">Paste your current action items and priorities. Reflections will assess alignment.</p>
+          <textarea id="input-action-plan" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: var(--font); min-height: 150px; margin-bottom: 10px;"></textarea>
+          <button id="btn-save-action-plan" class="btn btn-primary">Save</button>
+        </div>
+        <div class="settings-group">
           <h3>Data Privacy</h3>
           <ul class="privacy-details">
             <li>All notes and reflections are stored in your browser's localStorage</li>
@@ -317,6 +329,8 @@ const Storage = (() => {
     API_KEY: 'actionplan_api_key',
     OBJECTIVES: 'actionplan_objectives',
     REFLECTIONS: 'actionplan_reflections',
+    JOB_DESCRIPTION: 'actionplan_job_description',
+    ACTION_PLAN: 'actionplan_action_plan',
   };
 
   function get(key) {
@@ -331,6 +345,10 @@ const Storage = (() => {
 
   function getApiKey() { return localStorage.getItem(KEYS.API_KEY) || ''; }
   function setApiKey(key) { localStorage.setItem(KEYS.API_KEY, key); }
+  function getJobDescription() { return localStorage.getItem(KEYS.JOB_DESCRIPTION) || ''; }
+  function setJobDescription(desc) { localStorage.setItem(KEYS.JOB_DESCRIPTION, desc); }
+  function getActionPlan() { return localStorage.getItem(KEYS.ACTION_PLAN) || ''; }
+  function setActionPlan(plan) { localStorage.setItem(KEYS.ACTION_PLAN, plan); }
   function getObjectives() { return get(KEYS.OBJECTIVES) || []; }
   function setObjectives(objectives) { set(KEYS.OBJECTIVES, objectives); }
   function getReflections() { return get(KEYS.REFLECTIONS) || []; }
@@ -351,7 +369,7 @@ const Storage = (() => {
     return { objectives: getObjectives(), reflections: getReflections(), exportedAt: new Date().toISOString() };
   }
 
-  return { getApiKey, setApiKey, getObjectives, setObjectives, getReflections, saveReflection, deleteReflection, clearAll, exportAll };
+  return { getApiKey, setApiKey, getJobDescription, setJobDescription, getActionPlan, setActionPlan, getObjectives, setObjectives, getReflections, saveReflection, deleteReflection, clearAll, exportAll };
 })();
 
 // === Objectives ===
@@ -441,12 +459,24 @@ const Voice = (() => {
 
 // === Reflect ===
 const Reflect = (() => {
-  function buildPrompt(notes, meetingTitle, participants, objectives) {
+  function buildPrompt(notes, meetingTitle, participants, objectives, jobDescription, actionPlan) {
     const objectivesList = objectives.length > 0
       ? objectives.map((o, i) => '  ' + (i + 1) + '. ' + o).join('\n')
       : '  (No objectives defined yet — provide general productivity guidance)';
 
-    return 'You are a sharp, honest personal reflection coach. A user has just finished a meeting or conversation and is telling you what happened. Your job is to help them extract signal from noise, challenge them on time management, and map everything back to their strategic objectives.\n\nHere are their strategic objectives:\n' + objectivesList + '\n\nMeeting/conversation: ' + (meetingTitle || 'Untitled') + '\nParticipants: ' + (participants || 'Not specified') + '\n\nTheir raw notes:\n---\n' + notes + '\n---\n\nRespond with a structured reflection in this EXACT JSON format (no markdown, just valid JSON):\n{\n  "summary": "1-2 sentence summary of what actually happened",\n  "decisions": ["list of decisions that were made or implied"],\n  "action_items": [\n    {\n      "task": "what needs to be done",\n      "owner": "who should do it (if mentioned)",\n      "objective": "which strategic objective this maps to, or null"\n    }\n  ],\n  "insights": ["key things learned, realized, or that shifted thinking"],\n  "open_questions": ["unresolved questions or ambiguities"],\n  "objective_alignment": [\n    {\n      "objective": "the strategic objective",\n      "status": "advancing | stalled | at risk | not addressed",\n      "note": "brief explanation"\n    }\n  ],\n  "time_challenge": "A direct, honest 2-3 sentence challenge to the user about their time management based on what they described. Be constructive but don\'t be soft. Ask them a hard question about whether this meeting was the best use of their time, or what they\'d do differently.",\n  "energy_read": "One sentence on the emotional/energy tone you detect from their notes — are they energized, frustrated, scattered, focused?"\n}\n\nBe concise. Be honest. Don\'t pad the output. If the notes are vague, say so and push back.';
+    let context = 'You are a sharp, honest personal reflection coach. A user has just finished a meeting or conversation and is telling you what happened. Your job is to help them extract signal from noise, challenge them on time management, and map everything back to their role and strategic objectives.\n\n';
+
+    if (jobDescription) {
+      context += 'THEIR JOB DESCRIPTION AND ROLE:\n' + jobDescription + '\n\n';
+    }
+
+    if (actionPlan) {
+      context += 'THEIR CURRENT ACTION PLAN:\n' + actionPlan + '\n\n';
+    }
+
+    context += 'Here are their strategic objectives:\n' + objectivesList + '\n\nMeeting/conversation: ' + (meetingTitle || 'Untitled') + '\nParticipants: ' + (participants || 'Not specified') + '\n\nTheir raw notes:\n---\n' + notes + '\n---\n\nRespond with a structured reflection in this EXACT JSON format (no markdown, just valid JSON):\n{\n  "summary": "1-2 sentence summary of what actually happened",\n  "decisions": ["list of decisions that were made or implied"],\n  "action_items": [\n    {\n      "task": "what needs to be done",\n      "owner": "who should do it (if mentioned)",\n      "objective": "which strategic objective this maps to, or null"\n    }\n  ],\n  "insights": ["key things learned, realized, or that shifted thinking"],\n  "open_questions": ["unresolved questions or ambiguities"],\n  "objective_alignment": [\n    {\n      "objective": "the strategic objective",\n      "status": "advancing | stalled | at risk | not addressed",\n      "note": "brief explanation"\n    }\n  ],\n  "role_alignment": "Briefly assess how this meeting and the outcomes align (or don\'t align) with the user\'s core job responsibilities and current action plan.",\n  "time_challenge": "A direct, honest 2-3 sentence challenge to the user about their time management based on what they described. Be constructive but don\'t be soft. Ask them a hard question about whether this meeting was the best use of their time, or what they\'d do differently given their role.",\n  "energy_read": "One sentence on the emotional/energy tone you detect from their notes — are they energized, frustrated, scattered, focused?"\n}\n\nBe concise. Be honest. Don\'t pad the output. If the notes are vague, say so and push back.';
+
+    return context;
   }
 
   async function analyze(notes, meetingTitle, participants) {
@@ -454,7 +484,9 @@ const Reflect = (() => {
     if (!apiKey) throw new Error('No API key set. Go to Settings to add your Claude API key.');
 
     const objectives = Objectives.getAll();
-    const prompt = buildPrompt(notes, meetingTitle, participants, objectives);
+    const jobDescription = Storage.getJobDescription();
+    const actionPlan = Storage.getActionPlan();
+    const prompt = buildPrompt(notes, meetingTitle, participants, objectives, jobDescription, actionPlan);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -550,6 +582,9 @@ const History = (() => {
         return '<li><strong style="color:' + color + '">[' + escapeHtml(a.status).toUpperCase() + ']</strong> ' + escapeHtml(a.objective) + ' \u2014 ' + escapeHtml(a.note) + '</li>';
       }).join('') + '</ul></div>';
     }
+    if (reflection.role_alignment) {
+      html += '<div class="reflection-section"><h3>Role Alignment</h3><p>' + escapeHtml(reflection.role_alignment) + '</p></div>';
+    }
     if (reflection.time_challenge) {
       html += '<div class="time-challenge"><h3>Time Management Challenge</h3><p>' + escapeHtml(reflection.time_challenge) + '</p></div>';
     }
@@ -583,7 +618,12 @@ const App = (() => {
   function init() {
     document.getElementById('btn-objectives').addEventListener('click', () => { Objectives.render(); showPanel('objectives'); });
     document.getElementById('btn-history').addEventListener('click', () => { History.render(); showPanel('history'); });
-    document.getElementById('btn-settings').addEventListener('click', () => { document.getElementById('input-api-key').value = Storage.getApiKey(); showPanel('settings'); });
+    document.getElementById('btn-settings').addEventListener('click', () => {
+      document.getElementById('input-api-key').value = Storage.getApiKey();
+      document.getElementById('input-job-description').value = Storage.getJobDescription();
+      document.getElementById('input-action-plan').value = Storage.getActionPlan();
+      showPanel('settings');
+    });
 
     document.getElementById('btn-back-from-objectives').addEventListener('click', () => showPanel('input'));
     document.getElementById('btn-back-from-history').addEventListener('click', () => showPanel('input'));
@@ -592,6 +632,16 @@ const App = (() => {
     document.getElementById('btn-save-api-key').addEventListener('click', () => {
       Storage.setApiKey(document.getElementById('input-api-key').value.trim());
       showPanel('input');
+    });
+
+    document.getElementById('btn-save-job-description').addEventListener('click', () => {
+      Storage.setJobDescription(document.getElementById('input-job-description').value);
+      alert('Job description saved!');
+    });
+
+    document.getElementById('btn-save-action-plan').addEventListener('click', () => {
+      Storage.setActionPlan(document.getElementById('input-action-plan').value);
+      alert('Action plan saved!');
     });
 
     document.getElementById('btn-add-objective').addEventListener('click', () => {
